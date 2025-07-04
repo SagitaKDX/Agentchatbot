@@ -12,26 +12,34 @@ class BedrockAgentService:
     def __init__(self):
         self.client = boto3.client(
             service_name="bedrock-agent-runtime",
-            region_name=os.getenv('AWS_REGION', 'us-east-1'),
+            region_name=os.getenv('AWS_REGION', 'us-west-2'),
             aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
             aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
         )
-        self.agent_id = "XQLPZTJB60"
-        self.alias_id = "PQSMMMIGTM"
+        
+        # Get agent IDs from environment - required
+        self.agent_id = os.getenv('BEDROCK_AGENT_ID')
+        self.alias_id = os.getenv('BEDROCK_AGENT_ALIAS_ID')
+        
+        if not self.agent_id or not self.alias_id:
+            raise ValueError("BEDROCK_AGENT_ID and BEDROCK_AGENT_ALIAS_ID must be set in environment variables")
+        
         self.sessions = {}
         self.system_prompt = self._get_default_system_prompt()
+        
+        logger.info(f"Initialized Bedrock Agent Service with Agent ID: {self.agent_id}, Alias ID: {self.alias_id}")
 
     def _get_default_system_prompt(self):
-        return """IMPORTANT INSTRUCTIONS:
-- You are an English teaching AI assistant focused on helping with language learning and technical English.
-- NEVER ask users to write functions, code, or technical implementations.
-- If you cannot access information, knowledge bases, or external resources, simply respond with "I can't access that information right now."
-- Do not request users to provide code examples, write functions, or implement solutions.
-- Focus on explaining concepts clearly in simple English rather than asking for technical work.
-- Keep responses educational and helpful for English language learners.
-- Provide clear, concise explanations without requiring users to do technical work.
+        return """You are Veron, an expert English AI teaching assistant specializing in technical English for AI, IoT, and chip technology education. Your role is to:
 
-User question: """
+1. Help teachers explain complex technical concepts in simple English
+2. Provide vocabulary, grammar, and pronunciation guidance
+3. Create lesson plans and teaching materials
+4. Suggest effective teaching methods for technical subjects
+5. Adapt explanations to different English proficiency levels
+
+Always be encouraging, professional, and educational in your responses. Focus on practical teaching applications.
+"""
 
     def update_system_prompt(self, new_prompt):
         """Update the system prompt for the agent"""
@@ -46,16 +54,15 @@ User question: """
         if session_id is None:
             session_id = str(uuid.uuid4())
         
-        # Combine system prompt with user prompt
-        full_prompt = self.system_prompt + prompt
-        
         try:
+            logger.info(f"Invoking agent {self.agent_id} with session {session_id}")
+            
             response = self.client.invoke_agent(
                 agentId=self.agent_id,
                 agentAliasId=self.alias_id,
                 enableTrace=True,
                 sessionId=session_id,
-                inputText=full_prompt
+                inputText=prompt
             )
             
             completion = ""
@@ -78,6 +85,8 @@ User question: """
                 'message_count': self.sessions.get(session_id, {}).get('message_count', 0) + 1
             }
             
+            logger.info(f"Agent response received successfully for session {session_id}")
+            
             return {
                 'response': completion,
                 'session_id': session_id,
@@ -86,8 +95,19 @@ User question: """
             }
             
         except ClientError as e:
-            logger.error("Client error: %s", str(e))
-            raise Exception(f"Failed to invoke agent: {str(e)}")
+            error_code = e.response.get('Error', {}).get('Code', 'Unknown')
+            error_message = e.response.get('Error', {}).get('Message', str(e))
+            logger.error("AWS Client error [%s]: %s", error_code, error_message)
+            
+            if error_code == 'ResourceNotFoundException':
+                raise Exception(f"Agent not found. Please check your Agent ID ({self.agent_id}) and Alias ID ({self.alias_id}) are correct and the agent is deployed.")
+            elif error_code == 'AccessDeniedException':
+                raise Exception(f"Access denied. Check your AWS credentials and agent permissions: {error_message}")
+            elif error_code == 'ValidationException':
+                raise Exception(f"Invalid request: {error_message}")
+            else:
+                raise Exception(f"AWS error [{error_code}]: {error_message}")
+                
         except Exception as e:
             logger.error("Unexpected error: %s", str(e))
             raise Exception(f"Failed to invoke agent: {str(e)}")
