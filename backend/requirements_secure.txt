@@ -1,0 +1,32 @@
+Flask==2.3.3
+boto3==1.34.0
+flask-cors==4.0.0
+flask-limiter==3.5.0
+python-dotenv==1.0.0
+Werkzeug==2.3.7
+PyPDF2==3.0.1
+python-docx==0.8.11
+uuid==1.30
+marshmallow==3.20.1
+marshmallow-dataclass==8.6.0
+Pillow==10.0.1
+requests==2.31.0
+gunicorn==21.2.0
+pydub==0.25.1
+
+# Security Dependencies
+flask-talisman==1.1.0
+cryptography==41.0.7
+bcrypt==4.1.2
+passlib==1.7.4
+pyotp==2.9.0
+itsdangerous==2.1.2
+
+# Monitoring and Logging
+watchdog==3.0.0
+prometheus-flask-exporter==0.23.0
+
+# Development Security Tools
+bandit==1.7.5
+safety==2.3.5
+semgrep==1.45.0 

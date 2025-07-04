@@ -1,0 +1,208 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: english-ai-backend-secure
+    restart: unless-stopped
+    env_file:
+      - .env.secure
+    ports:
+      - "127.0.0.1:5000:5000"  # Only expose to localhost
+    volumes:
+      - ./logs:/app/logs
+      - ./certs:/app/certs:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "https://localhost:5000/api/health", "--insecure"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    networks:
+      - backend-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: english-ai-frontend-secure
+    restart: unless-stopped
+    environment:
+      - REACT_APP_API_URL=https://your-domain.com
+      - REACT_APP_ENABLE_HTTPS=true
+    volumes:
+      - frontend-build:/usr/share/nginx/html:ro
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /var/log/nginx
+    user: "101:101"  # nginx user
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    networks:
+      - frontend-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: english-ai-nginx-secure
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs/prod:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+      - frontend-build:/usr/share/nginx/html:ro
+      - nginx-logs:/var/log/nginx
+      - /etc/ssl/certs/dhparam.pem:/etc/ssl/certs/dhparam.pem:ro
+    depends_on:
+      - frontend
+      - backend
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+    user: "101:101"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - NET_BIND_SERVICE
+    networks:
+      - frontend-network
+      - backend-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: english-ai-certbot
+    volumes:
+      - ./certs/prod:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot
+    command: certonly --webroot --webroot-path=/var/www/certbot --email your-email@domain.com --agree-tos --no-eff-email -d your-domain.com
+    profiles:
+      - cert-renewal
+
+  security-monitor:
+    build:
+      context: ./security
+      dockerfile: Dockerfile.monitor
+    container_name: english-ai-security-monitor
+    restart: unless-stopped
+    env_file:
+      - .env.secure
+    volumes:
+      - ./logs:/app/logs:ro
+      - nginx-logs:/var/log/nginx:ro
+      - /var/log/auth.log:/var/log/auth.log:ro
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    user: "1000:1000"
+    cap_drop:
+      - ALL
+    networks:
+      - monitoring-network
+    profiles:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    container_name: english-ai-fail2ban
+    restart: unless-stopped
+    network_mode: "host"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./fail2ban:/data
+      - nginx-logs:/var/log/nginx:ro
+      - /var/log:/var/log:ro
+    environment:
+      - TZ=UTC
+      - F2B_LOG_LEVEL=INFO
+    profiles:
+      - security
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.1'
+
+networks:
+  frontend-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  backend-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+  monitoring-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+
+volumes:
+  frontend-build:
+    driver: local
+  nginx-logs:
+    driver: local
+  logs:
+    driver: local
+  certs:
+    driver: local 
