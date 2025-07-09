@@ -293,47 +293,24 @@ const VoiceModal = ({ isOpen, onClose, onSendMessage, isLoading }) => {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {availableVoices.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Speech Language
+                  Voice Selection
                 </label>
-                                  <select
-                    value={sttLang}
-                    onChange={(e) => setSttLang(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="auto">Auto Detect</option>
-                    <option value="en">English</option>
-                    <option value="vi">Tiếng Việt</option>
-                    <option value="es">Español</option>
-                    <option value="fr">Français</option>
-                    <option value="de">Deutsch</option>
-                    <option value="ja">日本語</option>
-                    <option value="ko">한국어</option>
-                    <option value="zh">中文</option>
-                  </select>
+                <select
+                  value={selectedVoice}
+                  onChange={(e) => setSelectedVoice(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {availableVoices.map((voice) => (
+                    <option key={voice.voice_id} value={voice.voice_id}>
+                      {voice.name}
+                    </option>
+                  ))}
+                </select>
               </div>
-
-              {availableVoices.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Voice Selection
-                  </label>
-                  <select
-                    value={selectedVoice}
-                    onChange={(e) => setSelectedVoice(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {availableVoices.map((voice) => (
-                      <option key={voice.voice_id} value={voice.voice_id}>
-                        {voice.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>

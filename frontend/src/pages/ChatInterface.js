@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, User, Loader, Plus, MessageSquare, Trash2, Edit3, Menu, Mic, Volume2, VolumeX } from 'lucide-react';
 import VoiceChat from '../components/VoiceChat';
+import InlineFileUpload from '../components/InlineFileUpload';
 
 const ChatInterface = () => {
   const [conversations, setConversations] = useState(() => {
@@ -663,7 +664,13 @@ const ChatInterface = () => {
         {/* Input Area - Fixed at bottom */}
         <div className="border-t border-blue-100/50 bg-gradient-to-t from-blue-50/90 to-white/90 backdrop-blur-sm p-3 md:p-6 flex-shrink-0">
           <div className="max-w-3xl mx-auto">
-            <div className="relative flex items-end space-x-2 md:space-x-3 bg-white/90 border-2 border-blue-200/50 rounded-2xl shadow-lg backdrop-blur-sm p-2">
+            <div className="relative flex items-center space-x-2 md:space-x-3 bg-white/90 border-2 border-blue-200/50 rounded-2xl shadow-lg backdrop-blur-sm p-2">
+              <InlineFileUpload
+                onFileUploaded={(file) => {
+                  console.log('File uploaded:', file);
+                }}
+                className="flex-shrink-0 self-center"
+              />
               <textarea
                 value={inputMessage}
                 onChange={handleInputChange}
@@ -679,7 +686,7 @@ const ChatInterface = () => {
                 disabled={isLoading}
                 aria-label="Voice Chat"
                 title="Voice Chat"
-                className="flex items-center justify-center bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110"
+                className="flex items-center justify-center bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 disabled:opacity-50 disabled:cursor-not-allowed text-white p-3 rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110 self-center"
                 style={{marginRight: '4px'}}
               >
                 <Mic className="h-5 w-5" />
@@ -701,7 +708,7 @@ const ChatInterface = () => {
                 disabled={!isInputValid() || isLoading}
                 aria-label="Send"
                 title="Send"
-                className={`flex items-center justify-center text-white p-3 rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110 ${
+                className={`flex items-center justify-center text-white p-3 rounded-full transition-all duration-200 shadow-md hover:shadow-lg hover:scale-110 self-center ${
                   !isInputValid() || isLoading
                     ? 'bg-gray-400 cursor-not-allowed opacity-50'
                     : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800'
@@ -722,6 +729,7 @@ const ChatInterface = () => {
         onSendMessage={msg => handleSendMessage(msg)}
         isLoading={isLoading}
       />
+
       <audio ref={ttsAudioRef} preload="auto" crossOrigin="anonymous" />
     </div>
   );

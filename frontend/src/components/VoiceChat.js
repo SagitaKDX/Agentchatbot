@@ -483,25 +483,7 @@ const VoiceChat = ({ isOpen, onClose, onSendMessage, isLoading }) => {
                   </p>
                 </div>
 
-                {/* Language Selector */}
-                <div className="flex items-center justify-center space-x-2 mt-4">
-                  <span className="text-sm text-gray-600">Language:</span>
-                  <select
-                    value={sttLang}
-                    onChange={(e) => setSttLang(e.target.value)}
-                    className="p-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="en-US">English (US)</option>
-                    <option value="en-GB">English (UK)</option>
-                    <option value="vi-VN">Tiếng Việt</option>
-                    <option value="es-ES">Español</option>
-                    <option value="fr-FR">Français</option>
-                    <option value="de-DE">Deutsch</option>
-                    <option value="ja-JP">日本語</option>
-                    <option value="ko-KR">한국어</option>
-                    <option value="zh-CN">中文</option>
-                  </select>
-                </div>
+
               </div>
             </div>
           </div>
