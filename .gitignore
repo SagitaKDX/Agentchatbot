@@ -18,7 +18,7 @@ yarn-error.log*
 backend/.env*
 
 # Production builds
-build/
+# build/
 dist/
 
 # Logs
